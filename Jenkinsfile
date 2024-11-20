@@ -29,10 +29,16 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.url=http://52.87.207.241:9000/ -Dsonar.login=squ_776d93de9a16828382810b5445de938b6a44838a -Dsonar.projectName=ekart-${env.BRANCH_NAME} \
-                -Dsonar.java.binaries=. \
-                -Dsonar.projectKey=ekart-${env.BRANCH_NAME} '''
+              withSonarQubeEnv('sonarqube') {
+                sh 'mvn sonar:sonar'
+              }
             }
+        }
+            // steps {
+            //     sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.url=http://52.87.207.241:9000/ -Dsonar.login=squ_776d93de9a16828382810b5445de938b6a44838a -Dsonar.projectName=ekart-${env.BRANCH_NAME} \
+            //     -Dsonar.java.binaries=. \
+            //     -Dsonar.projectKey=ekart-${env.BRANCH_NAME} '''
+            // }
             // steps {
             //     script {
             //         withSonarQubeEnv('sonarqube') {
