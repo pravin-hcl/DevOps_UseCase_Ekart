@@ -56,34 +56,80 @@ pipeline {
             }
         }
 
+        // stage('Docker Build and Push') {
+        //     steps {
+        //         script {
+        //             withDockerRegistry([credentialsId: 'docker-cred', url: '']) {
+        //                 def dockerImage = "pravinhcl/ekart:${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+        //                 sh "docker build -t ${dockerImage} -f docker/Dockerfile ."
+        //                 sh "docker push ${dockerImage}"
+        //             }
+        //         }
+        //     }
+        // }
         stage('Docker Build and Push') {
             steps {
                 script {
                     withDockerRegistry([credentialsId: 'docker-cred', url: '']) {
-                        def dockerImage = "pravinhcl/ekart:${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
-                        sh "docker build -t ${dockerImage} -f docker/Dockerfile ."
-                        sh "docker push ${dockerImage}"
+                        // Fetch the short commit ID
+                        def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+
+                        // Define the image tag using branch name and commit ID
+                        def tag = "latest-${env.BRANCH_NAME}-${commitId}"
+                        def imageName = "pravinhcl/ekart:${tag}"
+
+                        // Build the Docker image with the tag
+                        sh "docker build -t ${imageName} -f docker/Dockerfile ."
+
+                        // Push the image with the tag
+                        sh "docker push ${imageName}"
                     }
                 }
             }
         }
 
-        stage('Deploy') {
+
+        // stage('Deploy') {
+        //     steps {
+        //         script {
+        //             // Dynamically determine the Docker image to pull
+        //             def dockerImage = "pravinhcl/ekart:${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+
+        //             withDockerRegistry([credentialsId: 'docker-cred', url: '']) {
+        //                 // Pull the Docker image
+        //                 sh "docker pull ${dockerImage}"
+
+        //                 // Stop and remove any running container named 'ekart'
+        //                 sh 'docker stop ekart || true'
+        //                 sh 'docker rm ekart || true'
+
+        //                 // Run the Docker container using the pulled image
+        //                 sh "docker run -d --name ekart -p 8070:8070 ${dockerImage}"
+        //             }
+        //         }
+        //     }
+        // }
+
+        stage('Pull and Deploy') {
             steps {
                 script {
-                    // Dynamically determine the Docker image to pull
-                    def dockerImage = "pravinhcl/ekart:${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
-
                     withDockerRegistry([credentialsId: 'docker-cred', url: '']) {
-                        // Pull the Docker image
-                        sh "docker pull ${dockerImage}"
+                        // Fetch the short commit ID
+                        def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
 
-                        // Stop and remove any running container named 'ekart'
+                        // Define the image tag using branch name and commit ID
+                        def tag = "latest-${env.BRANCH_NAME}-${commitId}"
+                        def imageName = "pravinhcl/ekart:${tag}"
+
+                        // Pull the Docker image
+                        sh "docker pull ${imageName}"
+
+                        // Stop and remove any running container with the same name
                         sh 'docker stop ekart || true'
                         sh 'docker rm ekart || true'
 
-                        // Run the Docker container using the pulled image
-                        sh "docker run -d --name ekart -p 8070:8070 ${dockerImage}"
+                        // Run the Docker container with the pulled image
+                        sh "docker run -d --name ekart -p 8070:8070 ${imageName}"
                     }
                 }
             }
