@@ -33,7 +33,7 @@ pipeline {
                     withSonarQubeEnv('sonarqube') {
                         sh '''$SCANNER_HOME/bin/sonar-scanner \
                             -Dsonar.url=http://52.87.207.241:9000/ \
-                            -Dsonar.login=squ_776d93de9a16828382810b5445de938b6a44838a \
+                            -Dsonar.login=squ_c20c4e3465773cbdfdc5af4c51d20a46c3ffb573 \
                             -Dsonar.projectName=ekart-${env.BRANCH_NAME} \
                             -Dsonar.java.binaries=. \
                             -Dsonar.projectKey=ekart-${env.BRANCH_NAME}'''
