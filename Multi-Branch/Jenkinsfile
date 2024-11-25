@@ -23,13 +23,8 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonarqube') { // Use the SonarQube environment configured in Jenkins
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=ekart \
-                    -Dsonar.projectName=ekart \
-                    -Dsonar.java.binaries=. \
-                    -Dsonar.branch.name=${env.BRANCH_NAME} \
-                    -Dsonar.login=${SONAR_TOKEN} \
-                    -Dsonar.url=${SONAR_URL}'''
+                withSonarQubeEnv('sonarqube') {
+                    sh 'mvn sonar:sonar'
                 }
             }
         }
