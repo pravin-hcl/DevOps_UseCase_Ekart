@@ -70,7 +70,7 @@ pipeline {
                         def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
 
                         // Define the image tag using branch name and commit ID
-                        def tag = "latest-${env.BRANCH_NAME}-${commitId}"
+                        def tag = "${env.BRANCH_NAME}-${commitId}"
                         def imageName = "pravinhcl/ekart:${tag}"
 
                         // Pull the Docker image
