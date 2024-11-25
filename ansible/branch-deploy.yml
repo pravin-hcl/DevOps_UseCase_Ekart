@@ -1,0 +1,28 @@
+- name: Deploy Ekart Docker Container
+  hosts: localhost
+  tasks:
+    - name: Generate unique port based on branch name
+      set_fact:
+        branch_name: "{{ ansible_env.BRANCH_NAME | default('main') | regex_replace('/', '-') }}"
+        forwarding_port: "{{ 8070 + branch_name | hash('md5') | int(base=16) % 100 }}"
+
+    - name: Pull Docker image
+      community.docker.docker_image:
+        name: pravinhcl/ekart
+        tag: latest
+        source: pull
+
+    - name: Run Docker container
+      community.docker.docker_container:
+        name: ekart-{{ branch_name }}
+        image: pravinhcl/ekart:latest
+        state: started
+        ports:
+          - "{{ forwarding_port }}:8070"
+
+    - name: Display port information
+      debug:
+        msg: "Container for branch {{ branch_name }} is accessible on port {{ forwarding_port }}"
+
+
+
