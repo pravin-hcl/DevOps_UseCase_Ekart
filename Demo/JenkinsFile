@@ -96,7 +96,7 @@ pipeline {
             steps {
                 script {
                     def branchName = env.BRANCH_NAME // Get the branch name from the environment
-                    def playbook = (branchName == 'main') ? 'ansible/deploy.yml' : "ansible/${branchName}-deploy.yml"
+                    def playbook = (branchName == 'main') ? 'ansible/deploy.yml' : "ansible/branch-deploy.yml"
 
                     echo "Running Ansible playbook for branch: ${branchName}"
                     sh """
