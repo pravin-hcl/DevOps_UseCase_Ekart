@@ -71,7 +71,11 @@ pipeline {
         stage('Update ansible/branch-deploy.yml') {
             steps {
                 script {
-                    // Get the branch name and commit ID
+                    // Get the branch name and commit 
+                    def branchName_all = env.BRANCH_NAME
+
+                    echo  "full branch name: ${branchName_all}"
+                    
                     def branchName = env.BRANCH_NAME.replaceAll('/', '-') // Replace slashes with hyphens for Docker tag compatibility
                     def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
 
