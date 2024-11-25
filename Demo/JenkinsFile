@@ -95,7 +95,14 @@ pipeline {
         stage('Deploy via Ansible') {
             steps {
                 script {
-                    sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no root@34.228.42.87 "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ansible/deploy.yml"'
+                    def branchName = env.BRANCH_NAME // Get the branch name from the environment
+                    def playbook = (branchName == 'main') ? 'ansible/deploy.yml' : "ansible/${branchName}-deploy.yml"
+
+                    echo "Running Ansible playbook for branch: ${branchName}"
+                    sh """
+                        ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no root@34.228.42.87 \
+                        "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ${playbook}"
+                    """
                 }
             }
         }
