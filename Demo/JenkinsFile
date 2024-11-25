@@ -42,7 +42,7 @@ pipeline {
             steps {
               withSonarQubeEnv(credentialsId: 'sonartoken', installationName: 'sonarqube') {
                 script {
-                        def sonarToken = credentials('SONAR_TOKEN')
+                        def sonarToken = credentialsId('SONAR_TOKEN')
 
                         sh ''' ${scannerHome}/bin/sonar-scanner \
                             -Dsonar.url=http://52.87.207.241:9000/ \
