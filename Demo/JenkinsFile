@@ -80,7 +80,7 @@ pipeline {
                     // Update the ansible/deploy.yml file with the new image tag and container name
                     sh "sed -i 's|tag: .*|tag: ${branchName}-${commitId}|' ansible/branch-deploy.yml"
                     sh "sed -i 's|image: pravinhcl/ekart:.*|image: pravinhcl/ekart:${branchName}-${commitId}|' ansible/branch-deploy.yml"
-                    sh "sed -i 's|name: ekart-container |name: ekart-${branchName}|' ansible/branch-deploy.yml"
+                    sh "sed -i 's|name: ekart-container|name: ekart-${branchName}-container|' ansible/branch-deploy.yml"
                 }
             }
         }
