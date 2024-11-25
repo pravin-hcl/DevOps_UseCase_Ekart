@@ -1,0 +1,80 @@
+pipeline {
+    agent any
+    
+    tools{
+        jdk 'jdk'
+        maven 'maven'
+    }
+    
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+    }
+    
+    stages {
+        stage('Git-Checkout') {
+            steps {
+                script {
+                    // Dynamically checkout the branch associated with the multibranch pipeline
+                    echo "Branch being built: ${env.BRANCH_NAME}"
+                    checkout scm
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') { // Use the SonarQube environment configured in Jenkins
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectKey=ekart \
+                    -Dsonar.projectName=ekart \
+                    -Dsonar.java.binaries=. \
+                    -Dsonar.branch.name=${env.BRANCH_NAME} \
+                    -Dsonar.login=${SONAR_TOKEN} \
+                    -Dsonar.url=${SONAR_URL}'''
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean install -DskipTests=true'
+            }
+        }
+        
+        stage('Docker Build and Push') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', url: '') {
+                        // Fetch the short commit ID for tagging purposes
+                        def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                        
+                        // Define the image tag using branch name and commit ID
+                        def tag = "${env.BRANCH_NAME}-${commitId}"
+                        def imageName = "pravinhcl/ekart:${tag}"
+
+                        // Build the Docker image with the tag
+                        sh "docker build -t ${imageName} -f docker/Dockerfile ."
+
+                        // Push the Docker image
+                        sh "docker push ${imageName}"
+                    }
+                }
+            }
+        }
+
+        stage('Transfer Ansible Files') {
+            steps {
+                script {
+                    sh 'scp -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no -r ansible/ root@34.228.42.87:/home/ansible/workspace/CI-Pipeline'
+                }
+            }
+        }
+
+        stage('Deploy via Ansible') {
+            steps {
+                script {
+                    sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no root@34.228.42.87 "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ansible/deploy.yml"'
+                }
+            }
+        }
+    }
+}

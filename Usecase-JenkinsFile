@@ -1,3 +1,148 @@
+// pipeline {
+//     agent any
+    
+//     tools{
+//         jdk 'jdk'
+//         maven 'maven'
+//     }
+    
+//     environment {
+//         SCANNER_HOME= tool 'sonar-scanner'
+//     }
+    
+//     stages {
+//         stage('Git-Checkout') {
+//             steps {
+//                 git branch: 'main', changelog: false, poll: false, url: 'https://github.com/pravin-hcl/DevOps_UseCase_Ekart.git'
+//             }
+//         }
+//         // stage('Git-Checkout') {
+//         //     steps {
+//         //         checkout changelog: false, poll: false, scm: scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'bitbucket', url: 'https://hclt-devops-test-admin@bitbucket.org/hclt-jenkins-demo/jenkins-maven-app.git']])
+//         //     }
+//         // // }
+//         // stage('Compile') {
+//         //     steps {
+//         //         sh 'mvn clean compile'
+//         //     }
+//         // }
+        
+//         // stage('SonarQube Analysis') {
+//         //     steps {
+//         //         sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.url=http://52.87.207.241:9000/ -Dsonar.login=squ_57f8110784de5d010289a8447007553605fd2952 -Dsonar.projectName=ekart \
+//         //         -Dsonar.java.binaries=. \
+//         //         -Dsonar.projectKey=ekart '''
+//         //     }
+//         // }
+
+// //         stage('Build') {
+// //             steps {
+// //                 sh 'mvn clean install -DskipTests=true'
+// //             }
+// //         }
+// //     }
+// // }
+ 
+ 
+//         // stage("build & SonarQube analysis") {
+//         //     steps {
+//         //       withSonarQubeEnv('sonarqube') {
+//         //         sh 'mvn sonar:sonar'
+//         //       }
+//         //     }
+//         // }
+        
+//         // stage("Quality Gate") {
+//         //     steps {
+//         //       timeout(time: 1, unit: 'HOURS') {
+//         //         waitForQualityGate abortPipeline: true
+//         //       }
+//         //     }
+//         // }
+
+
+// //         stage('Build') {
+// //             steps {
+// //                 sh 'mvn clean install -DskipTests=true'
+// //             }
+// //         }
+        
+// //         stage('Dockerhub') {
+// //             steps {
+// //                 script{
+// //                     // sh 'docker ps'
+// //                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+// //                         sh 'docker build -t ekart:latest -f docker/Dockerfile .'
+// //                         sh 'docker tag ekart:latest pravinhcl/ekart:latest'
+// //                         sh 'docker push pravinhcl/ekart:latest'
+// // }
+// //                 }
+// //             }
+// //         }
+        
+//         stage('Transfer Ansible Files') {
+//             steps {
+//                 script {
+//                     sh 'scp -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no -r ansible/ root@34.228.42.87:/home/ansible/workspace/CI-Pipeline'
+//                 }
+//             }
+//         }
+//         stage('Deploy via Ansible') {
+//             steps {
+//                 script {
+//                     sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no root@34.228.42.87 "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ansible/deploy.yml"'
+//                 }
+//             }
+//         }
+//         // stage('Transfer Ansible Files') {
+//         //     steps {
+//         //         script {
+//         //             sh 'scp -i /var/lib/jenkins/.ssh/id_rsa -r ansible/ root@54.167.33.48:/home/ansible/workspace/CI-Pipeline'
+//         //         }
+//         //     }
+//         // }
+//         // stage('Deploy via Ansible') {
+//         //     steps {
+//         //         script {
+//         //             sh 'ssh -i /root/.ssh/id_rsa root@54.167.33.48 "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ansible/deploy.yml"'
+//         //         }
+//         //     }
+//         // }
+        
+//         // stage('Run on Ansibe Agent') {
+//         //     agent { label 'ansible-1' } 
+//         //     steps {
+//         //         sh 'uptime'
+//         //         sh 'echo $WORKSPACE'
+//         //         sh 'docker run -d hello-world'
+//         //         sh 'ansible-playbook --version'
+//         //         // sh "sudo apt-get install -y tree"
+//         //         sh "pwd"
+//         //         sh 'tree'
+//         //         sh "ls"
+//         //         // sh 'ansible-playbook -i ansible/hosts ansible/deploy.yml'
+//         //     }
+//         // }
+        
+//         // stage('Deploy ') {
+//         //     steps {
+//         //         script{
+//         //             // sh 'docker ps'
+//         //             withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+//         //                 sh 'docker stop ekart 2>/dev/null || true'
+//         //                 sh 'docker rm ekart 2>/dev/null || true'
+//         //                 sh 'docker run -d --name ekart -p 8070:8070 pravinhcl/ekart:latest'
+//         //             }
+//         //         }
+//         //     }
+//         // }
+        
+//     }
+// }
+
+
+
+
 pipeline {
     agent any
     
@@ -29,10 +174,15 @@ pipeline {
         
         // stage('SonarQube Analysis') {
         //     steps {
-        //         sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.url=http://52.87.207.241:9000/ -Dsonar.login=squ_57f8110784de5d010289a8447007553605fd2952 -Dsonar.projectName=ekart \
-        //         -Dsonar.java.binaries=. \
-        //         -Dsonar.projectKey=ekart '''
-        //     }
+        //         withCredentials([
+        //             string(credentialsId: 'SONAR_URL', variable: 'SONAR_URL'),
+        //             string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TKN')
+                // ]){
+                //     sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.url=${SONAR_URL} -Dsonar.login=${SONAR_TKN} -Dsonar.projectName=ekart1 \
+                //     -Dsonar.java.binaries=. \
+                //     -Dsonar.projectKey=ekart1 '''
+        //         }
+        //         }
         // }
 
 //         stage('Build') {
@@ -44,41 +194,44 @@ pipeline {
 // }
  
  
-        // stage("build & SonarQube analysis") {
-        //     steps {
-        //       withSonarQubeEnv('sonarqube') {
-        //         sh 'mvn sonar:sonar'
-        //       }
-        //     }
-        // }
+        stage("build & SonarQube analysis") {
+            steps {
+              withSonarQubeEnv('sonarqube') {
+                // sh 'mvn sonar:sonar'
+                sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.url=http://54.166.181.38:9000/ -Dsonar.projectName=ekart3 \
+                    -Dsonar.java.binaries=. \
+                    -Dsonar.projectKey=ekart3 '''
+              }
+            }
+        }
         
-        // stage("Quality Gate") {
-        //     steps {
-        //       timeout(time: 1, unit: 'HOURS') {
-        //         waitForQualityGate abortPipeline: true
-        //       }
-        //     }
-        // }
+        stage("Quality Gate") {
+            steps {
+              timeout(time: 1, unit: 'HOURS') {
+                waitForQualityGate abortPipeline: true
+              }
+            }
+        }
 
 
-//         stage('Build') {
-//             steps {
-//                 sh 'mvn clean install -DskipTests=true'
-//             }
-//         }
+        stage('Build') {
+            steps {
+                sh 'mvn clean install -DskipTests=true'
+            }
+        }
         
-//         stage('Dockerhub') {
-//             steps {
-//                 script{
-//                     // sh 'docker ps'
-//                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-//                         sh 'docker build -t ekart:latest -f docker/Dockerfile .'
-//                         sh 'docker tag ekart:latest pravinhcl/ekart:latest'
-//                         sh 'docker push pravinhcl/ekart:latest'
-// }
-//                 }
-//             }
-//         }
+        stage('Dockerhub') {
+            steps {
+                script{
+                    // sh 'docker ps'
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh 'docker build -t ekart:latest -f docker/Dockerfile .'
+                        sh 'docker tag ekart:latest pravinhcl/ekart:latest'
+                        sh 'docker push pravinhcl/ekart:latest'
+}
+                }
+            }
+        }
         
         stage('Transfer Ansible Files') {
             steps {
