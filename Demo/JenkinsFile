@@ -21,37 +21,20 @@ pipeline {
             }
         }
 
-        // stage('SonarQube Analysis') {
-        //     environment {
-        //         scannerHome = tool 'sonar-scanner';
-        //     }
-        //     steps {
-        //       withSonarQubeEnv(credentialsId: 'sonartoken', installationName: 'sonarqube') {
-
-        //         sh ''' ${scannerHome}/bin/sonar-scanner -Dsonar.url=http://52.87.207.241:9000/ -Dsonar.login=squ_4bbe1fd0e273894ee497eea8d7f1490a4796f869 -Dsonar.projectName=demo-ekart \
-        //             -Dsonar.java.binaries=. \
-        //             -Dsonar.projectKey=demo-ekart '''
-        //       }
-        //     }
-        // }
-
         stage('SonarQube Analysis') {
             environment {
                 scannerHome = tool 'sonar-scanner';
             }
             steps {
               withSonarQubeEnv(credentialsId: 'sonartoken', installationName: 'sonarqube') {
-                script {
 
-                        sh ''' ${scannerHome}/bin/sonar-scanner \
-
-                            -Dsonar.projectName=demo-ekart21 \
-                            -Dsonar.java.binaries=. \
-                            -Dsonar.projectKey=demo-ekart21 '''
-                    }
+                sh ''' ${scannerHome}/bin/sonar-scanner -Dsonar.url=http://52.87.207.241:9000/ -Dsonar.login=squ_4bbe1fd0e273894ee497eea8d7f1490a4796f869 -Dsonar.projectName=demo-ekart-1 \
+                    -Dsonar.java.binaries=. \
+                    -Dsonar.projectKey=demo-ekart-1 '''
               }
             }
         }
+
 
         // stage('Build') {
         //     steps {
