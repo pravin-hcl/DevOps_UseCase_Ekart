@@ -36,47 +36,68 @@ pipeline {
         }
 
 
-        // stage('Build') {
-        //     steps {
-        //         sh 'mvn clean install -DskipTests=true'
-        //     }
-        // }
+        stage('Build') {
+            steps {
+                sh 'mvn clean install -DskipTests=true'
+            }
+        }
         
-        // stage('Docker Build and Push') {
-        //     steps {
-        //         script {
-        //             withDockerRegistry(credentialsId: 'docker-cred', url: '') {
-        //                 // Fetch the short commit ID for tagging purposes
-        //                 def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                        
-        //                 // Define the image tag using branch name and commit ID
-        //                 def tag = "${env.BRANCH_NAME}-${commitId}"
-        //                 def imageName = "pravinhcl/ekart:${tag}"
+        stage('Build and Tag Docker Image') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        // Get the branch name and commit ID
+                        def branchName = env.BRANCH_NAME.replaceAll('/', '-') // Replace slashes with hyphens for Docker tag compatibility
+                        def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
 
-        //                 // Build the Docker image with the tag
-        //                 sh "docker build -t ${imageName} -f docker/Dockerfile ."
+                        echo "Building Docker image for branch: ${branchName}, commit ID: ${commitId}"
 
-        //                 // Push the Docker image
-        //                 sh "docker push ${imageName}"
-        //             }
-        //         }
-        //     }
-        // }
+                        // Build the Docker image
+                        sh "docker build -t ekart -f docker/Dockerfile ."
 
-        // stage('Transfer Ansible Files') {
-        //     steps {
-        //         script {
-        //             sh 'scp -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no -r ansible/ root@34.228.42.87:/home/ansible/workspace/CI-Pipeline'
-        //         }
-        //     }
-        // }
+                        // Tag the image with branch name and commit ID
+                        sh "docker tag ekart pravinhcl/ekart:${branchName}-${commitId}"
 
-        // stage('Deploy via Ansible') {
-        //     steps {
-        //         script {
-        //             sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no root@34.228.42.87 "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ansible/deploy.yml"'
-        //         }
-        //     }
-        // }
+                        // Tag the image as 'latest' for the branch
+                        sh "docker tag ekart pravinhcl/ekart:${branchName}-latest"
+
+                        // Push all tags to Docker Hub
+                        sh "docker image push --all-tags pravinhcl/ekart"
+                    }
+                }
+            }
+        }
+
+        stage('Update ansible/deploy.yml') {
+            steps {
+                script {
+                    // Get the branch name and commit ID
+                    def branchName = env.BRANCH_NAME.replaceAll('/', '-') // Replace slashes with hyphens for Docker tag compatibility
+                    def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+
+                    echo "Updating ansible/deploy.yml for branch: ${branchName}, commit ID: ${commitId}"
+
+                    // Update the ansible/deploy.yml file with the new image tag
+                    sh "sed -i 's|tag: .*|tag: ${branchName}-${commitId}|' ansible/deploy.yml"
+                    sh "sed -i 's|image: pravinhcl/ekart:.*|image: pravinhcl/ekart:${branchName}-${commitId}|' ansible/deploy.yml"
+                }
+            }
+        }
+
+        stage('Transfer Ansible Files') {
+            steps {
+                script {
+                    sh 'scp -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no -r ansible/ root@34.228.42.87:/home/ansible/workspace/CI-Pipeline'
+                }
+            }
+        }
+
+        stage('Deploy via Ansible') {
+            steps {
+                script {
+                    sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no root@34.228.42.87 "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ansible/deploy.yml"'
+                }
+            }
+        }
     }
 }
