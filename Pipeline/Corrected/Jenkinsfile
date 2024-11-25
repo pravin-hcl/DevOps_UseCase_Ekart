@@ -1,35 +1,40 @@
-
-
 pipeline {
     agent any
-    
-    tools{
+
+    tools {
         jdk 'jdk'
         maven 'maven'
     }
-    
+
     environment {
-        SCANNER_HOME= tool 'sonar-scanner'
+        SCANNER_HOME = tool 'sonar-scanner'
     }
-    
+
     stages {
         stage('Git-Checkout') {
             steps {
-                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/pravin-hcl/DevOps_UseCase_Ekart.git'
+                checkout changelog: false, poll: false, scm: scmGit(
+                    branches: [[name: '*/main']],
+                    extensions: [],
+                    userRemoteConfigs: [[credentialsId: 'bitbucket', url: 'https://hclt-devops-test-admin@bitbucket.org/hclt-jenkins-demo/jenkins-maven-app.git']]
+                )
             }
         }
-        
+
         stage('SonarQube Analysis') {
             steps {
                 withCredentials([
                     string(credentialsId: 'SONAR_URL', variable: 'SONAR_URL'),
                     string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TKN')
-                ]){
-                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.url=${SONAR_URL} -Dsonar.login=${SONAR_TKN} -Dsonar.projectName=ekart \
-                    -Dsonar.java.binaries=. \
-                    -Dsonar.projectKey=ekart '''
+                ]) {
+                    sh '''$SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.url=${SONAR_URL} \
+                        -Dsonar.login=${SONAR_TKN} \
+                        -Dsonar.projectName=ekart \
+                        -Dsonar.java.binaries=. \
+                        -Dsonar.projectKey=ekart'''
                 }
-                }
+            }
         }
 
         stage('Build') {
@@ -37,20 +42,49 @@ pipeline {
                 sh 'mvn clean install -DskipTests=true'
             }
         }
-        
-        stage('Dockerhub') {
+
+        stage('Build and Tag Docker Image') {
             steps {
-                script{
-                    // sh 'docker ps'
+                script {
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
-                        sh 'docker build -t ekart:latest -f docker/Dockerfile .'
-                        sh 'docker tag ekart:latest pravinhcl/ekart:latest'
-                        sh 'docker push pravinhcl/ekart:latest'
-}
+                        // Get the commit ID
+                        def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                        echo "Building Docker image with commit ID: ${commitId}"
+
+                        // Build the Docker image
+                        sh "docker build -t ekart -f docker/Dockerfile ."
+
+                        // Tag the image with the commit ID
+                        sh "docker tag ekart pravinhcl/ekart:${commitId}"
+
+                        // Tag the image as 'latest'
+                        sh "docker tag ekart pravinhcl/ekart:latest"
+
+                        // Push the 'latest' image to Docker Hub
+                        // sh "docker push pravinhcl/ekart:latest"
+
+                        // // Push the image with the commit ID tag to Docker Hub
+                        // sh "docker push pravinhcl/ekart:${commitId}"
+                        sh 'docker image push --all-tags pravinhcl/ekart'
+                    }
                 }
             }
         }
-        
+
+        stage('Update ansible/deploy.yml') {
+            steps {
+                script {
+                    // Get the commit ID
+                    def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    echo "Updating ansible/deploy.yml with commit ID: ${commitId}"
+
+                    // Update the ansible/deploy.yml file with commit ID for both the image tag and the container image
+                    sh "sed -i 's|tag: latest|tag: ${commitId}|' ansible/deploy.yml"
+                    sh "sed -i 's|image: pravinhcl/ekart:latest|image: pravinhcl/ekart:${commitId}|' ansible/deploy.yml"
+                }
+            }
+        }
+
         stage('Transfer Ansible Files') {
             steps {
                 script {
@@ -58,6 +92,7 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy via Ansible') {
             steps {
                 script {
@@ -65,6 +100,5 @@ pipeline {
                 }
             }
         }
-               
     }
 }
