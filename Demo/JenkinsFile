@@ -68,7 +68,7 @@ pipeline {
             }
         }
 
-        stage('Update ansible/deploy.yml') {
+        stage('Update ansible/branch-deploy.yml') {
             steps {
                 script {
                     // Get the branch name and commit ID
@@ -77,9 +77,10 @@ pipeline {
 
                     echo "Updating ansible/deploy.yml for branch: ${branchName}, commit ID: ${commitId}"
 
-                    // Update the ansible/deploy.yml file with the new image tag
-                    sh "sed -i 's|tag: .*|tag: ${branchName}-${commitId}|' ansible/deploy.yml"
-                    sh "sed -i 's|image: pravinhcl/ekart:.*|image: pravinhcl/ekart:${branchName}-${commitId}|' ansible/deploy.yml"
+                    // Update the ansible/deploy.yml file with the new image tag and container name
+                    sh "sed -i 's|tag: .*|tag: ${branchName}-${commitId}|' ansible/branch-deploy.yml"
+                    sh "sed -i 's|image: pravinhcl/ekart:.*|image: pravinhcl/ekart:${branchName}-${commitId}|' ansible/branch-deploy.yml"
+                    sh "sed -i 's|name: ekart-container |name: ekart-${branchName}|' ansible/branch-deploy.yml"
                 }
             }
         }
@@ -92,21 +93,19 @@ pipeline {
             }
         }
 
-        stage('Update ansible/deploy.yml') {
+        stage('Deploy via Ansible') {
             steps {
                 script {
-                    // Get the branch name and commit ID
-                    def branchName = env.BRANCH_NAME.replaceAll('/', '-') // Replace slashes with hyphens for Docker tag compatibility
-                    def commitId = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    def branchName = env.BRANCH_NAME // Get the branch name from the environment
+                    def playbook = (branchName == 'main') ? 'ansible/deploy.yml' : "ansible/branch-deploy.yml"
 
-                    echo "Updating ansible/deploy.yml for branch: ${branchName}, commit ID: ${commitId}"
-
-                    // Update the ansible/deploy.yml file with the new image tag and container name
-                    sh "sed -i 's|tag: .*|tag: ${branchName}-${commitId}|' ansible/deploy.yml"
-                    sh "sed -i 's|image: pravinhcl/ekart:.*|image: pravinhcl/ekart:${branchName}-${commitId}|' ansible/deploy.yml"
-                    sh "sed -i 's|name: ekart-container |name: ekart-${branchName}|' ansible/branch-deploy.yml"
+                    echo "Running Ansible playbook for branch: ${branchName}"
+                    sh """
+                        ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no root@34.228.42.87 \
+                        "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ${playbook}"
+                    """
                 }
             }
-        }
+        }  
     }
 }
