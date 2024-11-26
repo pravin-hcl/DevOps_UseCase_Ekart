@@ -61,8 +61,12 @@ pipeline {
                         // Tag the image as 'latest' for the branch
                         sh "docker tag ekart pravinhcl/ekart:${branchName}-latest"
 
-                        // Push all tags to Docker Hub
-                        sh "docker image push --all-tags pravinhcl/ekart"
+                        // Push tags to Docker Hub
+                        // sh "docker image push --all-tags pravinhcl/ekart"
+                        sh "docker push pravinhcl/ekart:${branchName}-${commitId}"
+
+                        // Tag the image as 'latest' for the branch
+                        sh "docker push pravinhcl/ekart:${branchName}-latest"
                     }
                 }
             }
