@@ -9,11 +9,11 @@ pipeline {
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
     }
-
+    
     stages {
         stage('Git-Checkout') {
             steps {
-                checkout changelog: false, poll: false, scm: scmGit(
+                checkout scm: scmGit(
                     branches: [[name: '*/main']],
                     extensions: [],
                     userRemoteConfigs: [[credentialsId: 'bitbucket', url: 'https://hclt-devops-test-admin@bitbucket.org/hclt-jenkins-demo/jenkins-maven-app.git']]
@@ -44,6 +44,7 @@ pipeline {
         }
 
         stage('Build and Tag Docker Image') {
+            
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
@@ -61,11 +62,11 @@ pipeline {
                         sh "docker tag ekart pravinhcl/ekart:latest"
 
                         // Push the 'latest' image to Docker Hub
-                        // sh "docker push pravinhcl/ekart:latest"
+                        sh "docker push pravinhcl/ekart:latest"
 
-                        // // Push the image with the commit ID tag to Docker Hub
-                        // sh "docker push pravinhcl/ekart:${commitId}"
-                        sh 'docker image push --all-tags pravinhcl/ekart'
+                        // Push the image with the commit ID tag to Docker Hub
+                        sh "docker push pravinhcl/ekart:${commitId}"
+                        // sh 'docker image push --all-tags pravinhcl/ekart'
                     }
                 }
             }
@@ -93,10 +94,21 @@ pipeline {
             }
         }
 
+        // stage('Deploy via Ansible') {
+        //     steps {
+        //         script {
+        //             sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no root@34.228.42.87 "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ansible/deploy.yml"'
+        //         }
+        //     }
+        // }
+        
         stage('Deploy via Ansible') {
+            agent { label 'ansible-1' }
+            
             steps {
                 script {
-                    sh 'ssh -i /var/lib/jenkins/.ssh/id_rsa -o StrictHostKeyChecking=no root@34.228.42.87 "cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ansible/deploy.yml"'
+                    // Run the Ansible playbook on the agent
+                    sh 'cd /home/ansible/workspace/CI-Pipeline && ansible-playbook -i ansible/hosts ansible/deploy.yml'
                 }
             }
         }
